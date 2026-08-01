@@ -1,8 +1,0 @@
-node_modules
-output
-.workbuddy
-*.log
-scheduler_config.json
-.git
-.gitignore
-README.md
