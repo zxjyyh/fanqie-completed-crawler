@@ -5,7 +5,4 @@ output
 scheduler_config.json
 .git
 .gitignore
-Dockerfile
-docker-compose.yml
-.dockerignore
 README.md
