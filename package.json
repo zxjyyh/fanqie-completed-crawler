@@ -1,0 +1,26 @@
+{
+  "name": "fanqie-completed-crawler",
+  "version": "1.0.0",
+  "description": "番茄小说每日新增完结书单抓取（Web UI + 定时自动抓取）",
+  "main": "ui_server.js",
+  "scripts": {
+    "start": "node ui_server.js --no-open",
+    "ui": "node ui_server.js",
+    "crawl": "node fanqie_daily_completed.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "fanqie",
+    "novel",
+    "crawler",
+    "scraper",
+    "puppeteer",
+    "web-scraping"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^25.4.0"
+  }
+}

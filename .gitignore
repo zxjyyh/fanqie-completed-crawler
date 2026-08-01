@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output / scraped data
+output/*.json
+
+# Runtime configuration (copy .example and fill in your own)
+scheduler_config.json
+
+# IDE & editor
+.workbuddy/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker
+# (keep Dockerfile, docker-compose.yml, .dockerignore)
+
+# Environment
+.env
+.env.local

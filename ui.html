@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>番茄每日完结小说抓取</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f5f6f8; color: #2b2f36; min-height: 100vh;
+  }
+  .container { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { margin-bottom: 20px; }
+  header h1 { font-size: 22px; }
+  header p { color: #8a8f99; font-size: 13px; margin-top: 6px; }
+  .card {
+    background: #fff; border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .field label { display: block; font-size: 12px; color: #8a8f99; margin-bottom: 4px; }
+  .field input {
+    padding: 8px 12px; border: 1px solid #d9dce1; border-radius: 8px;
+    font-size: 14px; outline: none; width: 160px;
+  }
+  .field input:focus { border-color: #ff5a36; }
+  button.primary {
+    padding: 9px 28px; background: #ff5a36; color: #fff; border: none;
+    border-radius: 8px; font-size: 15px; cursor: pointer; transition: .15s;
+  }
+  button.primary:hover:not(:disabled) { background: #e64e2e; }
+  button.primary:disabled { background: #ffb3a3; cursor: not-allowed; }
+  details.adv { width: 100%; font-size: 13px; color: #666; }
+  details.adv summary { cursor: pointer; user-select: none; }
+  details.adv .controls { margin-top: 10px; }
+  details.adv .field input { width: 110px; padding: 6px 10px; font-size: 13px; }
+
+  .steps { display: flex; gap: 8px; margin-bottom: 14px; }
+  .step {
+    flex: 1; text-align: center; padding: 8px 4px; border-radius: 8px;
+    background: #f0f1f4; color: #9aa0aa; font-size: 12px; transition: .2s;
+  }
+  .step.active { background: #fff1ed; color: #ff5a36; font-weight: 600; }
+  .step.done { background: #e8f7ee; color: #2c9e5f; }
+
+  .stats { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .stat {
+    flex: 1; min-width: 110px; background: #f8f9fb; border-radius: 10px;
+    padding: 12px; text-align: center;
+  }
+  .stat .num { font-size: 22px; font-weight: 700; color: #ff5a36; }
+  .stat .lbl { font-size: 12px; color: #8a8f99; margin-top: 2px; }
+
+  .bar-wrap { height: 8px; background: #f0f1f4; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+  .bar { height: 100%; width: 0%; background: linear-gradient(90deg,#ff5a36,#ff8a5c); transition: width .2s; }
+
+  #log {
+    background: #1e222b; color: #c8d0dc; border-radius: 10px; padding: 12px 14px;
+    font-family: Consolas, monospace; font-size: 12px; line-height: 1.7;
+    height: 180px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+  }
+  #log .warn { color: #f0b429; }
+  #log .err { color: #ff6b5e; }
+  #log .ok { color: #43c77a; }
+
+  .result-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .result-head h2 { font-size: 17px; }
+  .result-head .sub { color: #8a8f99; font-size: 13px; }
+  a.dl {
+    padding: 7px 16px; background: #2c9e5f; color: #fff; border-radius: 8px;
+    font-size: 13px; text-decoration: none;
+  }
+  a.dl:hover { background: #258a52; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #f0f1f4; }
+  th { color: #8a8f99; font-weight: 500; font-size: 12px; position: sticky; top: 0; background: #fff; }
+  tr:hover td { background: #fafbfc; }
+  td.title a { color: #2b2f36; text-decoration: none; }
+  td.title a:hover { color: #ff5a36; text-decoration: underline; }
+  td.cat { color: #7a8191; white-space: nowrap; }
+  td.cover img { width: 40px; height: 52px; object-fit: cover; border-radius: 4px; display: block; background: #f0f1f4; }
+  td.reads { color: #ff5a36; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.time { color: #7a8191; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: #ff5a36; }
+  th.sortable .arrow { font-size: 10px; margin-left: 3px; color: #ff5a36; }
+  .table-wrap { max-height: 520px; overflow-y: auto; border: 1px solid #f0f1f4; border-radius: 10px; }
+
+  .history { display: flex; flex-wrap: wrap; gap: 8px; }
+  .history button {
+    padding: 6px 14px; border: 1px solid #d9dce1; background: #fff; border-radius: 999px;
+    font-size: 13px; cursor: pointer; transition: .15s;
+  }
+  .history button:hover { border-color: #ff5a36; color: #ff5a36; }
+  .history button .n { color: #9aa0aa; font-size: 12px; }
+  .hidden { display: none !important; }
+  .note { font-size: 12px; color: #b08850; background: #fdf6ec; border-radius: 8px; padding: 8px 12px; margin-top: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🍅 番茄每日完结小说抓取</h1>
+    <p>口径：已完结 且 最后章节更新时间在当天（北京时间）。回填历史日期时，完结后更过番外/修订的书会有偏差。</p>
+  </header>
+
+  <div class="card" id="schedCard">
+    <div class="result-head">
+      <div>
+        <h2>自动抓取</h2>
+        <div class="sub" id="schedStatus">加载中…</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="time" id="schedTime" style="padding:7px 10px;border:1px solid #d9dce1;border-radius:8px;font-size:14px">
+        <button class="primary" id="schedSaveTime" style="padding:8px 16px;font-size:13px">保存时间</button>
+        <button class="primary" id="schedToggle" style="padding:8px 20px;font-size:13px">开启</button>
+      </div>
+    </div>
+    <div class="note">定时任务由本服务进程执行，服务停止则当天不会补跑；手动抓取不受影响，两者同时进行时自动任务会顺延。</div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <div class="field">
+        <label>目标日期</label>
+        <input type="date" id="dateInput">
+      </div>
+      <button class="primary" id="runBtn">开始抓取</button>
+      <details class="adv">
+        <summary>高级选项</summary>
+        <div class="controls">
+          <div class="field"><label>翻页间隔 (ms)</label><input type="number" id="delayInput" value="600"></div>
+          <div class="field"><label>详情间隔 (ms)</label><input type="number" id="detailDelayInput" value="350"></div>
+          <div class="field"><label>最多翻页数</label><input type="number" id="maxPagesInput" value="200"></div>
+        </div>
+      </details>
+    </div>
+    <div class="note">提示：单日完结书约 700 本，完整抓取约 10 分钟，请耐心等待；抓取中刷新页面不会中断任务。</div>
+  </div>
+
+  <div class="card hidden" id="progressCard">
+    <div class="steps" id="steps">
+      <div class="step" data-i="1">1 启动浏览器</div>
+      <div class="step" data-i="2">2 建立会话</div>
+      <div class="step" data-i="3">3 收集候选</div>
+      <div class="step" data-i="4">4 补全明文</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="num" id="stScanned">0</div><div class="lbl">已扫描</div></div>
+      <div class="stat"><div class="num" id="stCandidates">0</div><div class="lbl">候选命中</div></div>
+      <div class="stat"><div class="num" id="stDetail">0/0</div><div class="lbl">详情进度</div></div>
+      <div class="stat"><div class="num" id="stFails">0</div><div class="lbl">详情失败</div></div>
+      <div class="stat"><div class="num" id="stElapsed">0s</div><div class="lbl">已用时</div></div>
+    </div>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+    <div id="log"></div>
+  </div>
+
+  <div class="card hidden" id="resultCard">
+    <div class="result-head">
+      <div>
+        <h2 id="resultTitle">抓取结果</h2>
+        <div class="sub" id="resultSub"></div>
+      </div>
+      <a class="dl" id="dlLink" href="#">下载 JSON</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:40px">#</th><th style="width:52px">封面</th><th>书名</th>
+          <th class="sortable" data-key="author" style="width:115px">作者<span class="arrow"></span></th>
+          <th class="sortable" data-key="category" style="width:100px">分类<span class="arrow"></span></th>
+          <th class="sortable" data-key="word_count" style="width:72px">字数<span class="arrow"></span></th>
+          <th class="sortable" data-key="read_count" style="width:72px">在读<span class="arrow"></span></th>
+          <th class="sortable" data-key="completion_timestamp" style="width:150px">完结时间<span class="arrow"></span></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" id="historyCard">
+    <div class="result-head"><h2>历史结果</h2><div class="sub">点击日期可回看</div></div>
+    <div class="history" id="historyList"><span style="color:#9aa0aa;font-size:13px">加载中…</span></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const dateInput = $('dateInput'), runBtn = $('runBtn');
+const logEl = $('log');
+let jobStartTs = null, elapsedTimer = null;
+
+// 默认北京今天
+(function () {
+  const now = new Date(Date.now() + 8 * 3600e3);
+  dateInput.value = now.toISOString().slice(0, 10);
+})();
+
+function log(msg, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  logEl.appendChild(line);
+  while (logEl.children.length > 400) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setStage(i) {
+  document.querySelectorAll('#steps .step').forEach(el => {
+    const n = +el.dataset.i;
+    el.classList.toggle('done', n < i);
+    el.classList.toggle('active', n === i);
+  });
+}
+
+function setRunning(running) {
+  runBtn.disabled = running;
+  runBtn.textContent = running ? '抓取中…' : '开始抓取';
+  if (running) {
+    jobStartTs = Date.now();
+    clearInterval(elapsedTimer);
+    elapsedTimer = setInterval(() => {
+      $('stElapsed').textContent = Math.floor((Date.now() - jobStartTs) / 1000) + 's';
+    }, 1000);
+  } else {
+    clearInterval(elapsedTimer);
+  }
+}
+
+function resetProgress() {
+  $('progressCard').classList.remove('hidden');
+  logEl.innerHTML = '';
+  ['stScanned','stCandidates','stFails'].forEach(id => $(id).textContent = '0');
+  $('stDetail').textContent = '0/0';
+  $('bar').style.width = '0%';
+  setStage(0);
+}
+
+// 封面链接统一成无签名稳定地址（兼容旧 JSON 里的过期签名链接）
+function normalizeCover(u) {
+  if (!u) return '';
+  try {
+    const url = new URL(u);
+    return 'https://p3-novel.byteimg.com' + url.pathname;
+  } catch { return u; }
+}
+
+function formatReadCount(rc) {
+  const n = parseInt(rc) || 0;
+  return n >= 10000 ? (n / 10000).toFixed(1) + '万' : String(n);
+}
+
+let currentBooks = [], currentDate = '', currentStats = null;
+let sortState = { key: null, dir: 1 }; // dir: 1 升序, -1 降序
+
+function getSortVal(b, key) {
+  if (key === 'category') return (b.categories && b.categories[0]) || '';
+  if (key === 'word_count') return Number(b.word_count) || 0;
+  if (key === 'read_count') return parseInt(b.read_count) || 0;
+  if (key === 'completion_timestamp') return Number(b.completion_timestamp) || 0;
+  return b[key] || '';
+}
+
+function renderTable() {
+  const books = [...currentBooks];
+  if (sortState.key) {
+    const k = sortState.key, d = sortState.dir;
+    books.sort((a, b) => {
+      const va = getSortVal(a, k), vb = getSortVal(b, k);
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * d;
+      return String(va).localeCompare(String(vb), 'zh-CN') * d;
+    });
+  }
+  const frag = document.createDocumentFragment();
+  books.forEach((b, i) => {
+    const tr = document.createElement('tr');
+    const wc = b.word_count ? (b.word_count / 10000).toFixed(1) + '万' : '-';
+    const cat = (b.categories && b.categories[0]) || '-';
+    const title = b.title || '(书名获取失败)';
+    const cover = normalizeCover(b.cover_url);
+    tr.innerHTML =
+      '<td>' + (i + 1) + '</td>' +
+      '<td class="cover">' + (cover ? '<img loading="lazy" src="' + cover + '" alt="">' : '') + '</td>' +
+      '<td class="title"><a href="' + b.url + '" target="_blank" rel="noopener"></a></td>' +
+      '<td></td><td class="cat"></td><td>' + wc + '</td>' +
+      '<td class="reads">' + formatReadCount(b.read_count) + '</td>' +
+      '<td class="time">' + (b.completion_time || '') + '</td>';
+    tr.children[2].firstChild.textContent = title;
+    tr.children[3].textContent = b.author || '-';
+    tr.children[4].textContent = cat;
+    frag.appendChild(tr);
+  });
+  $('tbody').innerHTML = '';
+  $('tbody').appendChild(frag);
+  // 更新箭头
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.querySelector('.arrow').textContent =
+      th.dataset.key === sortState.key ? (sortState.dir === 1 ? ' ▲' : ' ▼') : '';
+  });
+}
+
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (sortState.key === key) {
+      sortState.dir = -sortState.dir;       // 再点同一列 → 翻转升降序
+    } else {
+      sortState = { key, dir: 1 };          // 新列 → 默认升序
+    }
+    renderTable();
+  });
+});
+
+function renderResult(date, books, stats) {
+  $('resultCard').classList.remove('hidden');
+  $('resultTitle').textContent = date + ' 完结小说（' + books.length + ' 本）';
+  let sub = '';
+  if (stats) sub = '扫描 ' + stats.books_scanned + ' 本 · API 调用 ' + stats.api_calls + ' 次 · 详情失败 ' + stats.detail_failures + ' 本';
+  $('resultSub').textContent = sub;
+  $('dlLink').href = '/api/result?date=' + date + '&download=1';
+  currentBooks = books || [];
+  currentDate = date;
+  currentStats = stats;
+  sortState = { key: null, dir: 1 };
+  renderTable();
+}
+
+function handleEvent(e) {
+  switch (e.type) {
+    case 'replay-start':
+      if (e.running) { resetProgress(); setRunning(true); log('已连接到正在运行的任务 (' + (e.date || '今天') + ')…'); }
+      break;
+    case 'job-start':
+      resetProgress(); setRunning(true);
+      log('开始抓取: ' + e.date);
+      break;
+    case 'meta':
+      log('目标: ' + e.date + ' (' + e.rangeStart + ' ~ ' + e.rangeEnd + ')');
+      break;
+    case 'stage':
+      setStage(e.index);
+      log('[' + e.index + '/4] ' + e.name);
+      break;
+    case 'log':
+      log(e.message, e.message.startsWith('[警告]') ? 'warn' : '');
+      if (e.message.startsWith('共扫描')) $('stScanned').textContent = (e.message.match(/共扫描 (\d+)/) || [])[1] || '';
+      break;
+    case 'collect':
+      $('stScanned').textContent = e.scanned;
+      $('stCandidates').textContent = e.candidates;
+      log('第 ' + e.page + ' 页: ' + e.pageBooks + ' 本 · 命中 ' + e.hits + ' · 累计候选 ' + e.candidates);
+      break;
+    case 'detail':
+      $('stDetail').textContent = e.done + '/' + e.total;
+      $('stFails').textContent = e.fails;
+      $('bar').style.width = (e.done / e.total * 100).toFixed(1) + '%';
+      if (e.done % 50 === 0 || e.done === e.total) log('详情进度 ' + e.done + '/' + e.total + ' (失败 ' + e.fails + ')');
+      break;
+    case 'done':
+      setStage(5);
+      $('bar').style.width = '100%';
+      log('完成！共 ' + e.total + ' 本，已保存: ' + e.outPath, 'ok');
+      renderResult(e.date, e.books, e.stats);
+      loadHistory();
+      break;
+    case 'job-error':
+      log('执行失败: ' + e.message, 'err');
+      break;
+    case 'job-end':
+      setRunning(false);
+      loadHistory();
+      fetchSchedule();
+      break;
+  }
+}
+
+// SSE 连接（自动重连）
+(function connect() {
+  const es = new EventSource('/api/events');
+  es.onmessage = ev => {
+    try { handleEvent(JSON.parse(ev.data)); } catch {}
+  };
+  es.onerror = () => { es.close(); setTimeout(connect, 3000); };
+})();
+
+// 启动时若任务在跑，显示进度卡
+fetch('/api/status').then(r => r.json()).then(s => {
+  if (s.running) $('progressCard').classList.remove('hidden');
+});
+
+runBtn.onclick = async () => {
+  const body = {
+    date: dateInput.value || undefined,
+    delay: +$('delayInput').value || 600,
+    detailDelay: +$('detailDelayInput').value || 350,
+    maxPages: +$('maxPagesInput').value || 200,
+  };
+  runBtn.disabled = true;
+  try {
+    const r = await fetch('/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (!r.ok) { alert(j.error || '启动失败'); runBtn.disabled = false; }
+  } catch (e) {
+    alert('请求失败: ' + e.message);
+    runBtn.disabled = false;
+  }
+};
+
+function loadHistory() {
+  fetch('/api/history').then(r => r.json()).then(j => {
+    const box = $('historyList');
+    box.innerHTML = '';
+    if (!j.files.length) {
+      box.innerHTML = '<span style="color:#9aa0aa;font-size:13px">暂无历史结果</span>';
+      return;
+    }
+    for (const f of j.files) {
+      const btn = document.createElement('button');
+      btn.innerHTML = f.date + (f.total != null ? ' <span class="n">' + f.total + ' 本</span>' : '');
+      btn.onclick = () => loadResultFile(f.date);
+      box.appendChild(btn);
+    }
+  });
+}
+
+function loadResultFile(date) {
+  fetch('/api/result?date=' + date).then(r => r.json()).then(j => {
+    renderResult(j.fetch_date, j.books || [], j.stats);
+    $('resultCard').scrollIntoView({ behavior: 'smooth' });
+  }).catch(() => alert('加载失败'));
+}
+
+// ---------- 定时调度控制 ----------
+let schedState = null;
+
+function renderSchedule() {
+  if (!schedState) return;
+  const t = $('schedToggle');
+  const timeInput = $('schedTime');
+  timeInput.value = schedState.time || '23:50';
+
+  let statusHtml;
+  if (schedState.enabled) {
+    t.textContent = '已开启 · 点击关闭';
+    t.style.background = '#2c9e5f';
+    statusHtml = '状态：<b style="color:#2c9e5f">已开启</b> · 每天 <b>' + schedState.time + '</b>（北京时间）自动抓取当天完结书单 · 下次执行：<b>' + (schedState.nextRun || '-') + '</b>';
+  } else {
+    t.textContent = '已关闭 · 点击开启';
+    t.style.background = '#9aa0aa';
+    statusHtml = '状态：<b style="color:#9aa0aa">已关闭</b> · 设置时间为 <b>' + schedState.time + '</b>（北京时间），开启后每天自动抓取当天完结书单';
+  }
+  if (schedState.lastRun) {
+    const lr = schedState.lastRun;
+    const at = (lr.at || '').replace('T', ' ').slice(0, 19);
+    statusHtml += '<br>上次自动执行：' + (lr.date || '-') + ' · ' +
+      (lr.ok ? '<b style="color:#2c9e5f">成功</b>，共 ' + lr.total + ' 本' : '<b style="color:#d4380d">失败</b>') +
+      ' · ' + at;
+  } else {
+    statusHtml += '<br>上次自动执行：暂无记录';
+  }
+  if (schedState.running) statusHtml += ' · <span style="color:#ff5a36">当前有任务运行中</span>';
+  $('schedStatus').innerHTML = statusHtml;
+}
+
+function fetchSchedule() {
+  fetch('/api/schedule').then(r => r.json()).then(s => { schedState = s; renderSchedule(); });
+}
+
+$('schedToggle').onclick = async () => {
+  if (!schedState) return;
+  const r = await fetch('/api/schedule', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: !schedState.enabled }),
+  });
+  schedState = await r.json();
+  renderSchedule();
+};
+
+$('schedSaveTime').onclick = async () => {
+  const time = $('schedTime').value;
+  if (!time) { alert('请先选择时间'); return; }
+  const r = await fetch('/api/schedule', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ time }),
+  });
+  const j = await r.json();
+  if (!r.ok) { alert(j.error || '保存失败'); return; }
+  schedState = j;
+  renderSchedule();
+};
+
+fetchSchedule();
+setInterval(fetchSchedule, 30000);
+
+loadHistory();
+</script>
+</body>
+</html>

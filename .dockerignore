@@ -1,0 +1,11 @@
+node_modules
+output
+.workbuddy
+*.log
+scheduler_config.json
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md
