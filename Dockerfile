@@ -24,12 +24,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 先装依赖并下载 Chrome（利用镜像层缓存：仅 package.json 变化才重装）
-COPY package.json ./
-RUN npm install --omit=dev \
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev \
     && npx puppeteer browsers install chrome
 
 # 再拷源码
-COPY ui_server.js fanqie_daily_completed.js ui.html scheduler_config.json.example ./
+COPY ui_server.js fanqie_daily_completed.js ui.html ./
+
+# 初始化默认调度配置：Docker 首次挂载空 volume 时会自动复制该文件到宿主机
+RUN mkdir -p /app/output
+COPY scheduler_config.json.example /app/output/scheduler_config.json
 
 EXPOSE 8787
 

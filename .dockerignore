@@ -1,0 +1,42 @@
+# === Dependencies (npm install 在镜像内执行) ===
+node_modules/
+
+# === 抓取结果（由 volume 挂载管理） ===
+output/*.json
+
+# === 运行时配置文件（首次部署时不存在，由 UI 自动生成） ===
+scheduler_config.json
+
+# === IDE & 编辑器 ===
+.workbuddy/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === Git ===
+.git/
+.gitignore
+.gitattributes
+
+# === Docker（避免递归） ===
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# === 文档 ===
+README.md
+LICENSE
+
+# === OS 杂项 ===
+.DS_Store
+Thumbs.db
+
+# === 环境变量 ===
+.env
+.env.local
+
+# === 日志 ===
+*.log
+npm-debug.log*

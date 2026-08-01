@@ -11,6 +11,9 @@ services:
       - ./output:/app/output  # 结果 JSON 与调度配置持久化到项目目录下的 output/
     environment:
       - PORT=8787
+      - OUTPUT_DIR=/app/output
+      - SCHED_FILE=/app/output/scheduler_config.json
+      - TZ=Asia/Shanghai
     restart: unless-stopped   # 崩溃/NAS 重启后自动拉起，保证每晚 23:50 定时任务不缺席
     shm_size: 512m            # Chrome 稳定运行余量（脚本本身已带 --disable-dev-shm-usage）
     healthcheck:
