@@ -20,15 +20,6 @@ scheduler_config.json
 .gitignore
 .gitattributes
 
-# === Docker（避免递归） ===
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# === 文档 ===
-README.md
-LICENSE
-
 # === OS 杂项 ===
 .DS_Store
 Thumbs.db
